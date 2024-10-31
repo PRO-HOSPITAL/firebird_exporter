@@ -97,7 +97,7 @@ scripts:
 **./script_exporter/scripts/firebird_exporter.py**
 
 ```
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __author__ = "Lukáš Drahník"
 __credits__ = ["Lukáš Drahník", "Marek Křiklán"]
