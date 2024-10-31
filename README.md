@@ -122,7 +122,7 @@ db_name = ''
 db_user = ''
 db_password = ''
 
-db_uni_man_file = 'dbs.csv'
+db_uni_man_file = 'fb_databases.csv'
 
 def find_db_user_and_pass(db_host_and_name, db_file):
 
@@ -173,6 +173,9 @@ else:
    print("First argument has to be in format <db_host:db_name> (e.g. fbserver.company.com:db_name).")
    exit(1)
 
+def escape_label_value(label_value):
+   return label_value.replace('\r\n', '').replace('\n', '').replace('"', '\\"').replace("'", "\\'")
+
 def print_counter(cursor):
    global prefix
 
@@ -184,7 +187,7 @@ def print_vector(cursor, value = 1):
 
    for row in cursor.fetchall():
 
-      vector_names_and_values = [field[0].lower() + '="' + str(row[i]).replace('\r\n', '').replace('\n', '').replace('"', '\\"') + '"' for i, field in enumerate(cursor.description) if i > 0 and not field[0].lower().startswith('as_value')]
+      vector_names_and_values = [field[0].lower() + '="' + escape_label_value(str(row[i])) + '"' for i, field in enumerate(cursor.description) if i > 0 and not field[0].lower().startswith('as_value')]
       vector_as_value = [str(row[i]) for i, field in enumerate(cursor.description) if i > 0 and field[0].lower().startswith('as_value')]
 
       if len(vector_as_value):
@@ -195,11 +198,12 @@ def print_vector(cursor, value = 1):
 driver_config.server_defaults.host.value = db_host
 
 #print(db_host, db_name, db_user, db_password) # testing purpose only
-with connect(db_name, user=db_user, password=db_password) as con:
+try:
+   with connect(db_name, user=db_user, password=db_password) as con:
 
-   cursor = con.cursor()
-   try:
-      cursor.execute("""SELECT 'active_transactions' as counter_name, count(*) as cntr_value
+      cursor = con.cursor()
+      try:
+         cursor.execute("""SELECT 'active_transactions' as counter_name, count(*) as cntr_value
             FROM MON$TRANSACTIONS
             WHERE MON$STATE = 1
             UNION
@@ -249,11 +253,14 @@ with connect(db_name, user=db_user, password=db_password) as con:
             FROM MON$DATABASE
             UNION
             SELECT 'next_transaction' as counter_name, MON$NEXT_TRANSACTION as cntr_value
+            FROM MON$DATABASE
+            UNION
+            SELECT 'database_duration_seconds' as counter_name, DATEDIFF(second, MON$CREATION_DATE, current_timestamp) as cntr_value
             FROM MON$DATABASE""")
-   except:
+      except:
 
-      # old fb version without table MON$MEMORY_USAGE
-      cursor.execute("""SELECT 'active_transactions' as counter_name, count(*) as cntr_value
+         # old fb version without table MON$MEMORY_USAGE
+         cursor.execute("""SELECT 'active_transactions' as counter_name, count(*) as cntr_value
             FROM MON$TRANSACTIONS
             WHERE MON$STATE = 1
             UNION
@@ -299,17 +306,24 @@ with connect(db_name, user=db_user, password=db_password) as con:
             FROM MON$DATABASE
             UNION
             SELECT 'next_transaction' as counter_name, MON$NEXT_TRANSACTION as cntr_value
+            FROM MON$DATABASE
+            UNION
+            SELECT 'database_duration_seconds' as counter_name, DATEDIFF(second, MON$CREATION_DATE, current_timestamp) as cntr_value
             FROM MON$DATABASE""")
 
-   print_counter(cursor)
+      print_counter(cursor)
 
-   # vectors
-   cursor.execute("""SELECT 'transaction_duration_seconds' AS vector_name, mt.MON$TRANSACTION_ID AS transaction_id,CAST(mt.MON$TIMESTAMP as TIMESTAMP) as transaction_timestamp, DATEDIFF(second, mt.MON$TIMESTAMP, current_timestamp) AS as_value, ma.MON$REMOTE_ADDRESS as REMOTE_ADDRESS, ma.MON$REMOTE_PROCESS as PROCESS, s.MON$SQL_TEXT as SQL_TEXT FROM MON$ATTACHMENTS ma JOIN MON$TRANSACTIONS mt ON ma.MON$ATTACHMENT_ID = mt.MON$ATTACHMENT_ID LEFT JOIN MON$STATEMENTS s ON ma.MON$ATTACHMENT_ID  = s.MON$ATTACHMENT_ID WHERE ma.MON$STATE = 1 AND ma.MON$ATTACHMENT_ID <> CURRENT_CONNECTION AND DATEDIFF(second, mt.MON$TIMESTAMP, current_timestamp) > 180""")
-   print("# transactions details are displayed only with duration > 3 mins")
-   print_vector(cursor)
+      # vectors
+      cursor.execute("""SELECT 'transaction_duration_seconds' AS vector_name, mt.MON$TRANSACTION_ID AS transaction_id,CAST(mt.MON$TIMESTAMP as TIMESTAMP) as transaction_timestamp, DATEDIFF(second, mt.MON$TIMESTAMP, current_timestamp) AS as_value, ma.MON$REMOTE_ADDRESS as REMOTE_ADDRESS, ma.MON$REMOTE_PROCESS as PROCESS, s.MON$SQL_TEXT as SQL_TEXT FROM MON$ATTACHMENTS ma JOIN MON$TRANSACTIONS mt ON ma.MON$ATTACHMENT_ID = mt.MON$ATTACHMENT_ID LEFT JOIN MON$STATEMENTS s ON ma.MON$ATTACHMENT_ID  = s.MON$ATTACHMENT_ID WHERE ma.MON$STATE = 1 AND ma.MON$ATTACHMENT_ID <> CURRENT_CONNECTION AND DATEDIFF(second, mt.MON$TIMESTAMP, current_timestamp) > 180""")
+      print("# transactions are displayed only with duration > 3 mins")
+      print_vector(cursor)
 
-   cursor.execute("""SELECT 'info' as vector_name, RDB$GET_CONTEXT('SYSTEM', 'ENGINE_VERSION') as version FROM RDB$DATABASE""")
-   print_vector(cursor)
+      cursor.execute("""SELECT 'info' as vector_name, RDB$GET_CONTEXT('SYSTEM', 'ENGINE_VERSION') as version FROM RDB$DATABASE""")
+      print_vector(cursor, 0)
+
+except Exception as e:
+   print(prefix + "info{error=\"" + escape_label_value(str(repr(e))) + "\"} 1")
+   sys.exit(1)
 ```
 
 **./script_exporter/scripts/dbs.csv**
