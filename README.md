@@ -326,7 +326,7 @@ except Exception as e:
    sys.exit(1)
 ```
 
-**./script_exporter/scripts/dbs.csv**
+**./script_exporter/scripts/fb_databases.csv**
 
 ```
 ...
