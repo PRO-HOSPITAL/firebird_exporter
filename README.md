@@ -401,6 +401,27 @@ basic_auth_users:
 **alert_rules.yml**
 ```
 ...
+- name: firebird
+  rules:
+
+  - alert: FirebirdDatabaseCreationDateCheck
+    expr: fb_database_duration_seconds{instance=~"testfb01.*|testfb02.*|dbmirror.*"} > 108000
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: Firebird database was created at least 30 hours ago (instance {{ $labels.instance }} {{ $value | humanizeDuration }} ago)
+      description: ""
+
+  - alert: FirebirdTooBigNextTransactionId
+    expr: fb_next_transaction > 2000000000
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: Firebird next transaction id is too big (instance {{ $labels.instance }})
+      description: "The limit in earlier versions (< 3) is 2,147,483,647."
+
   - alert: FirebirdBackupCheck
     expr: changes(file_content_hash_crc32{path=~".log"}[25h]) == 0
     for: 0m
@@ -409,6 +430,15 @@ basic_auth_users:
     annotations:
       summary: Firebird backup was not created for more than 24h (instance {{ $labels.instance }})
       description: ""
+
+  - alert: FirebirdDatabaseScrappingFailed
+    expr: fb_info == 1
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: Firebird database scrapping failed (instance {{ $labels.instance }})
+      description: "{{ $labels.error }}"
 
   - alert: FirebirdOldestActiveNextTransactionCheck
     expr: fb_next_transaction - fb_oldest_active > 20000000
