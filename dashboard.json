@@ -15,7 +15,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "11.1.0"
+      "version": "11.2.0-191577"
     },
     {
       "type": "datasource",
@@ -136,7 +136,7 @@
           }
         ]
       },
-      "pluginVersion": "11.1.0",
+      "pluginVersion": "11.2.0-191577",
       "targets": [
         {
           "datasource": {
@@ -342,6 +342,7 @@
           "showLegend": true
         },
         "mergeValues": true,
+        "perPage": 15,
         "rowHeight": 0.9,
         "showValue": "auto",
         "tooltip": {
@@ -385,6 +386,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -415,15 +417,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -486,6 +488,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -516,15 +519,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
@@ -1301,6 +1304,6 @@
   "timezone": "",
   "title": "Firebird",
   "uid": "d7facfb9-795d-4358-94e8-bc8973dbe3a7",
-  "version": 115,
+  "version": 120,
   "weekStart": ""
 }
